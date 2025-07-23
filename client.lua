@@ -21,13 +21,14 @@ local MAX_ACTIONS = 5
 local INTERACTION_DISTANCE = 1.5
 local PARTICLE_RENDER_DISTANCE = 150.0
 local ESCAPE_CHECK_INTERVAL = 2000
-local WORK_DURATION = 5000
+local WORK_DURATION = 10000 -- Updated to match hammer animation duration
 local J_KEY = 0xF3830D8E
 
 -- Cached functions for performance
 local PlayerPedId = PlayerPedId
 local GetEntityCoords = GetEntityCoords
 local vector3 = vector3
+
 local function DrawText3D(x, y, z, text, r, g, b)
     local onScreen, _x, _y = GetScreenCoordFromWorldCoord(x, y, z)
     if not onScreen then return end
@@ -42,6 +43,60 @@ local function DrawText3D(x, y, z, text, r, g, b)
     DrawSprite(spriteName, spriteDict, _x, _y + 0.0150, (0.015 + factor), 0.032, 0.1, 0, 0, 0, 190, 0)
     DisplayText(CreateVarString(10, "LITERAL_STRING", text), _x, _y)
 end
+
+-- Community Service Work Animation Function
+local function StartCommunityServiceWork()
+    local ped = PlayerPedId()
+    
+    -- Animation dictionary and name for hammer work
+    local dict = "amb_work@world_human_hammer@wall@male_a@trans"
+    local anim = "base_trans_base"
+    
+    -- Request animation dictionary
+    RequestAnimDict(dict)
+    while not HasAnimDictLoaded(dict) do
+        Citizen.Wait(100)
+    end
+    
+    -- Create and attach hammer prop
+    local hammer = CreateObject(`p_hammer01x`, GetEntityCoords(ped), true, true, true)
+    AttachEntityToEntity(hammer, ped, GetEntityBoneIndexByName(ped, "PH_R_Hand"), 0.02, 0.04, -0.06, 180.0, 180.0, 0.0, true, true, false, true, 1, true)
+    
+    -- Start the animation
+    TaskPlayAnim(ped, dict, anim, 8.0, -8.0, -1, 1, 0, true, 0, false, 0, false)
+    
+    -- Use progress bar with the animation
+    if exports.ox_lib:progressBar({
+        duration = WORK_DURATION,
+        label = '🔨 Performing Community Service...',
+        useWhileDead = false,
+        canCancel = true,
+        disable = {
+            move = true,
+            car = true,
+            combat = true,
+            mouse = false
+        },
+        anim = {
+            dict = dict,
+            clip = anim
+        },
+    }) then -- Completed
+        ClearPedTasks(ped)
+        DeleteEntity(hammer) -- Clean up the hammer prop
+        return true
+    else -- Cancelled
+        ClearPedTasks(ped)
+        DeleteEntity(hammer) -- Clean up the hammer prop
+        TriggerEvent('ox_lib:notify', {
+            title = 'Community Service',
+            description = 'Work cancelled',
+            type = 'error'
+        })
+        return false
+    end
+end
+
 -- Particle system optimization
 local function LoadParticleAsset()
     if HasNamedPtfxAssetLoaded(PARTICLE_DICT) then
@@ -245,8 +300,6 @@ local function ShowActionsRemaining(count)
     end
 end
 
-
-
 -- Event handlers
 RegisterNetEvent('rsg-communityservice:client:openPlayerMenu', function()
     TriggerServerEvent('rsg-communityservice:server:getOnlinePlayers')
@@ -272,8 +325,6 @@ RegisterNetEvent('rsg-communityservice:client:finishCommunityService', function(
     actionsRemaining = 0
     lastActionsCount = -1 -- Reset notification tracking
     ClearAllParticles()
-    
-    
 end)
 
 RegisterNetEvent('rsg-communityservice:client:inCommunityService', function(actions_remaining)
@@ -287,8 +338,6 @@ RegisterNetEvent('rsg-communityservice:client:inCommunityService', function(acti
     isSentenced = true
     communityServiceFinished = false
     
-    
-    
     -- Escape detection loop
     CreateThread(function()
         while actionsRemaining > 0 and not communityServiceFinished do
@@ -299,7 +348,7 @@ RegisterNetEvent('rsg-communityservice:client:inCommunityService', function(acti
                 ClearPedTasksImmediately(ped)
             end
             
-            if #(coords - Config.ServiceLocation) > 90 then
+            if #(coords - Config.ServiceLocation) > 100 then
                 SetEntityCoords(ped, Config.ServiceLocation.x, Config.ServiceLocation.y, Config.ServiceLocation.z)
                 TriggerServerEvent('rsg-communityservice:server:extendService')
                 actionsRemaining = actionsRemaining + Config.ServiceExtensionOnEscape
@@ -347,31 +396,32 @@ CreateThread(function()
                     DrawText3D(actionCoords.x, actionCoords.y, actionCoords.z + 1.0, "[J] Start Community Service Task")
 
                     -- Listen for key press
-                    if IsControlJustReleased(0, J_KEY) and (GetGameTimer() - lastInteractionTime > 1000) then
+                    if IsControlJustReleased(0, J_KEY) and (GetGameTimer() - lastInteractionTime > 1000) and not disable_actions then
                         lastInteractionTime = GetGameTimer()
-
-                        -- Do the work action
-                        local currentAction = availableActions[i]
-                        RemoveActionFromTable(currentAction)
-                        PopulateActionTable(currentAction)
-
                         disable_actions = true
-                        TriggerServerEvent('rsg-communityservice:server:completeService')
-                        actionsRemaining = actionsRemaining - 1
 
-                        TriggerEvent('ox_lib:notify', {
-                            title = 'Community Service',
-                            description = 'Task completed! ' .. actionsRemaining .. ' remaining',
-                            type = 'success',
-                            position = 'top-right',
-                            duration = 2000
-                        })
+                        -- Start the hammer work animation
+                        local workCompleted = StartCommunityServiceWork()
+                        
+                        if workCompleted then
+                            -- Do the work action
+                            local currentAction = availableActions[i]
+                            RemoveActionFromTable(currentAction)
+                            PopulateActionTable(currentAction)
 
-                        TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_CLEAN_TABLE', 0, false)
-                        Wait(WORK_DURATION)
-                        ClearPedTasks(ped)
+                            TriggerServerEvent('rsg-communityservice:server:completeService')
+                            actionsRemaining = actionsRemaining - 1
+
+                            TriggerEvent('ox_lib:notify', {
+                                title = 'Community Service',
+                                description = 'Task completed! ' .. actionsRemaining .. ' remaining',
+                                type = 'success',
+                                position = 'top-right',
+                                duration = 2000
+                            })
+                        end
+
                         disable_actions = false
-
                         break -- exit loop after successful action
                     end
                 end
@@ -385,7 +435,6 @@ CreateThread(function()
         Wait(sleep)
     end
 end)
-
 
 -- Cleanup on resource stop
 AddEventHandler('onResourceStop', function(resourceName)
