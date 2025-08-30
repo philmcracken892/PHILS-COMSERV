@@ -21,7 +21,7 @@ local MAX_ACTIONS = 5
 local INTERACTION_DISTANCE = 1.5
 local PARTICLE_RENDER_DISTANCE = 150.0
 local ESCAPE_CHECK_INTERVAL = 2000
-local WORK_DURATION = 10000 -- Updated to match hammer animation duration
+local WORK_DURATION = 10000
 local J_KEY = 0xF3830D8E
 
 -- Cached functions for performance
@@ -32,40 +32,26 @@ local vector3 = vector3
 local function DrawText3D(x, y, z, text, r, g, b)
     local onScreen, _x, _y = GetScreenCoordFromWorldCoord(x, y, z)
     if not onScreen then return end
-    
     local factor = (string.len(text)) / 160
-    
     SetTextScale(textScale, textScale)
     SetTextFontForCurrentCommand(textFont)
-    SetTextColor(255, 255, 255, 255) -- White
+    SetTextColor(255, 255, 255, 255)
     SetTextCentre(1)
-    
     DrawSprite(spriteName, spriteDict, _x, _y + 0.0150, (0.015 + factor), 0.032, 0.1, 0, 0, 0, 190, 0)
     DisplayText(CreateVarString(10, "LITERAL_STRING", text), _x, _y)
 end
 
--- Community Service Work Animation Function
 local function StartCommunityServiceWork()
     local ped = PlayerPedId()
-    
-    -- Animation dictionary and name for hammer work
     local dict = "amb_work@world_human_hammer@wall@male_a@trans"
     local anim = "base_trans_base"
-    
-    -- Request animation dictionary
     RequestAnimDict(dict)
     while not HasAnimDictLoaded(dict) do
         Citizen.Wait(100)
     end
-    
-    -- Create and attach hammer prop
     local hammer = CreateObject(`p_hammer01x`, GetEntityCoords(ped), true, true, true)
     AttachEntityToEntity(hammer, ped, GetEntityBoneIndexByName(ped, "PH_R_Hand"), 0.02, 0.04, -0.06, 180.0, 180.0, 0.0, true, true, false, true, 1, true)
-    
-    -- Start the animation
     TaskPlayAnim(ped, dict, anim, 8.0, -8.0, -1, 1, 0, true, 0, false, 0, false)
-    
-    -- Use progress bar with the animation
     if exports.ox_lib:progressBar({
         duration = WORK_DURATION,
         label = '🔨 Performing Community Service...',
@@ -81,13 +67,13 @@ local function StartCommunityServiceWork()
             dict = dict,
             clip = anim
         },
-    }) then -- Completed
+    }) then
         ClearPedTasks(ped)
-        DeleteEntity(hammer) -- Clean up the hammer prop
+        DeleteEntity(hammer)
         return true
-    else -- Cancelled
+    else
         ClearPedTasks(ped)
-        DeleteEntity(hammer) -- Clean up the hammer prop
+        DeleteEntity(hammer)
         TriggerEvent('ox_lib:notify', {
             title = 'Community Service',
             description = 'Work cancelled',
@@ -97,19 +83,15 @@ local function StartCommunityServiceWork()
     end
 end
 
--- Particle system optimization
 local function LoadParticleAsset()
     if HasNamedPtfxAssetLoaded(PARTICLE_DICT) then
         return true
     end
-    
     RequestNamedPtfxAsset(PARTICLE_DICT)
-    local timeout = GetGameTimer() + 3000 -- 3 second timeout
-    
+    local timeout = GetGameTimer() + 3000
     while not HasNamedPtfxAssetLoaded(PARTICLE_DICT) and GetGameTimer() < timeout do
         Wait(0)
     end
-    
     return HasNamedPtfxAssetLoaded(PARTICLE_DICT)
 end
 
@@ -117,12 +99,8 @@ local function CreateParticleEffect(coords)
     if not coords or not LoadParticleAsset() then 
         return nil 
     end
-
     UseParticleFxAsset(PARTICLE_DICT)
-    return StartParticleFxLoopedAtCoord(PARTICLE_NAME,
-        coords.x, coords.y, coords.z + 0.2, 
-        0.0, 0.0, 0.0, 
-        0.5, false, false, false, false)
+    return StartParticleFxLoopedAtCoord(PARTICLE_NAME, coords.x, coords.y, coords.z + 0.2, 0.0, 0.0, 0.0, 0.5, false, false, false, false)
 end
 
 local function ClearAllParticles()
@@ -135,7 +113,60 @@ local function ClearAllParticles()
     end
 end
 
--- Menu functions
+RegisterNetEvent("comserv:client:prisonclothes") -- prison outfit event
+AddEventHandler("comserv:client:prisonclothes", function()
+    local ped = PlayerPedId() -- Replace cache.ped with PlayerPedId()
+    
+    -- Remove all clothing items
+    RemoveShopItemFromPedByCategory(ped, 0x9925C067, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x485EE834, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x18729F39, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x3107499B, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x3C1A74CD, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x3F1F01E5, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x3F7F3587, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x49C89D9B, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x4A73515C, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x514ADCEA, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x5FC29285, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x79D7DF96, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x7A96FACA, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x877A2CF7, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x9B2C8B89, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0xA6D134C6, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0xE06D30CE, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x662AC34,  true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0xAF14310B, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x72E6EF74, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0xEABE0032, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0x2026C46D, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0xB6B6122D, true, true, true)
+    RemoveShopItemFromPedByCategory(ped, 0xB9E2FA01, true, true, true)
+
+    -- Apply prison clothes based on gender
+    if IsPedMale(ped) then
+        ApplyShopItemToPed(ped, 0x5BA76CCF, true, true, true) -- Male prison outfit
+        ApplyShopItemToPed(ped, 0x216612F0, true, true, true)
+        ApplyShopItemToPed(ped, 0x1CCEE58D, true, true, true)
+    else
+        ApplyShopItemToPed(ped, 0x6AB27695, true, true, true) -- Female prison outfit
+        ApplyShopItemToPed(ped, 0x75BC0CF5, true, true, true)
+        ApplyShopItemToPed(ped, 0x14683CDF, true, true, true)
+    end
+    
+    -- Remove all weapons
+    RemoveAllPedWeapons(ped, true, true)
+    
+    -- Notify player
+    TriggerEvent('ox_lib:notify', {
+        title = 'Community Service',
+        description = 'Prison clothes applied',
+        type = 'inform'
+    })
+end)
+
+
+
 local function ShowDurationMenu(targetId, targetName)
     local input = exports.ox_lib:inputDialog('Community Service Duration', {
         {
@@ -147,9 +178,7 @@ local function ShowDurationMenu(targetId, targetName)
             max = 50
         }
     })
-    
     if not input or not input[1] then return end
-    
     local actions = tonumber(input[1])
     if not actions or actions < 1 or actions > 50 then
         TriggerEvent('ox_lib:notify', {
@@ -159,7 +188,6 @@ local function ShowDurationMenu(targetId, targetName)
         })
         return
     end
-    
     TriggerServerEvent('rsg-communityservice:server:sendToCommunityService', targetId, actions)
     TriggerEvent('ox_lib:notify', {
         title = 'Community Service',
@@ -170,7 +198,6 @@ end
 
 local function ShowPlayerMenu()
     if #onlinePlayers == 0 then return end
-    
     local options = {}
     for i = 1, #onlinePlayers do
         local player = onlinePlayers[i]
@@ -182,10 +209,9 @@ local function ShowPlayerMenu()
             end
         }
     end
-    
     exports.ox_lib:registerContext({
         id = 'community_service_players',
-        title = 'Select Player for Community Service',
+        title = 'Select for Service',
         options = options
     })
     exports.ox_lib:showContext('community_service_players')
@@ -193,7 +219,6 @@ end
 
 local function ShowEndServiceMenu()
     local options = {}
-    
     if #playersInService > 0 then
         for i = 1, #playersInService do
             local player = playersInService[i]
@@ -207,7 +232,6 @@ local function ShowEndServiceMenu()
                         centered = true,
                         cancel = true
                     })
-                    
                     if alert == 'confirm' then
                         TriggerServerEvent('rsg-communityservice:server:finishCommunityService', player.id)
                     end
@@ -221,7 +245,6 @@ local function ShowEndServiceMenu()
             disabled = true
         }
     end
-    
     exports.ox_lib:registerContext({
         id = 'end_community_service',
         title = 'End Community Service',
@@ -230,7 +253,6 @@ local function ShowEndServiceMenu()
     exports.ox_lib:showContext('end_community_service')
 end
 
--- Core service functions
 local function IsActionAtCoords(coords, actionList)
     for i = 1, #actionList do
         local action = actionList[i]
@@ -255,11 +277,8 @@ end
 
 local function PopulateActionTable(excludeAction)
     ClearAllParticles()
-    
     while #availableActions < MAX_ACTIONS do
         local randomAction = Config.ServiceLocations[math.random(1, #Config.ServiceLocations)]
-        
-        -- Check if action already exists or is the excluded action
         if not IsActionAtCoords(randomAction.coords, availableActions) and 
            (not excludeAction or not IsActionAtCoords(randomAction.coords, {excludeAction})) then
             availableActions[#availableActions + 1] = randomAction
@@ -270,7 +289,6 @@ end
 local function RenderActionParticles()
     ClearAllParticles()
     local playerCoords = GetEntityCoords(PlayerPedId())
-    
     for i = 1, #availableActions do
         local coords = availableActions[i].coords
         if #(playerCoords - coords) < PARTICLE_RENDER_DISTANCE then
@@ -282,10 +300,9 @@ local function RenderActionParticles()
     end
 end
 
--- Notification system
 local lastActionsCount = -1
 local lastHelpNotification = 0
-local HELP_NOTIFICATION_COOLDOWN = 3000 -- 3 seconds between help notifications
+local HELP_NOTIFICATION_COOLDOWN = 3000
 
 local function ShowActionsRemaining(count)
     if count ~= lastActionsCount then
@@ -300,7 +317,6 @@ local function ShowActionsRemaining(count)
     end
 end
 
--- Event handlers
 RegisterNetEvent('rsg-communityservice:client:openPlayerMenu', function()
     TriggerServerEvent('rsg-communityservice:server:getOnlinePlayers')
 end)
@@ -323,31 +339,27 @@ RegisterNetEvent('rsg-communityservice:client:finishCommunityService', function(
     communityServiceFinished = true
     isSentenced = false
     actionsRemaining = 0
-    lastActionsCount = -1 -- Reset notification tracking
+    lastActionsCount = -1
     ClearAllParticles()
+    
 end)
 
 RegisterNetEvent('rsg-communityservice:client:inCommunityService', function(actions_remaining)
     if isSentenced then return end
-    
     local playerPed = PlayerPedId()
     actionsRemaining = actions_remaining
-    lastActionsCount = -1 -- Reset notification tracking
+    lastActionsCount = -1
     PopulateActionTable()
     SetEntityCoords(playerPed, Config.ServiceLocation.x, Config.ServiceLocation.y, Config.ServiceLocation.z)
     isSentenced = true
     communityServiceFinished = false
-    
-    -- Escape detection loop
     CreateThread(function()
         while actionsRemaining > 0 and not communityServiceFinished do
             local ped = PlayerPedId()
             local coords = GetEntityCoords(ped)
-            
             if IsPedInAnyVehicle(ped, false) then
                 ClearPedTasksImmediately(ped)
             end
-            
             if #(coords - Config.ServiceLocation) > 100 then
                 SetEntityCoords(ped, Config.ServiceLocation.x, Config.ServiceLocation.y, Config.ServiceLocation.z)
                 TriggerServerEvent('rsg-communityservice:server:extendService')
@@ -360,58 +372,44 @@ RegisterNetEvent('rsg-communityservice:client:inCommunityService', function(acti
                     duration = 4000
                 })
             end
-            
             Wait(ESCAPE_CHECK_INTERVAL)
         end
-        
         isSentenced = false
         ClearAllParticles()
+		
+       
     end)
 end)
 
 CreateThread(function()
     local lastInteractionTime = 0
-
     while true do
         local sleep = 1000
-
         if actionsRemaining > 0 and isSentenced then
-            sleep = 500 -- default when in service
+            sleep = 500
             ShowActionsRemaining(actionsRemaining)
             RenderActionParticles()
-
             local ped = PlayerPedId()
             local pCoords = GetEntityCoords(ped)
             local nearAction = false
-
             for i = 1, #availableActions do
                 local actionCoords = availableActions[i].coords
                 local dist = #(pCoords - actionCoords)
-
                 if dist < INTERACTION_DISTANCE then
                     nearAction = true
-                    sleep = 1 -- tighter loop when near interaction
-
-                    -- Show 3D DrawText hint
+                    sleep = 1
                     DrawText3D(actionCoords.x, actionCoords.y, actionCoords.z + 1.0, "[J] Start Community Service Task")
-
-                    -- Listen for key press
                     if IsControlJustReleased(0, J_KEY) and (GetGameTimer() - lastInteractionTime > 1000) and not disable_actions then
                         lastInteractionTime = GetGameTimer()
                         disable_actions = true
-
-                        -- Start the hammer work animation
                         local workCompleted = StartCommunityServiceWork()
-                        
                         if workCompleted then
-                            -- Do the work action
                             local currentAction = availableActions[i]
                             RemoveActionFromTable(currentAction)
                             PopulateActionTable(currentAction)
-
                             TriggerServerEvent('rsg-communityservice:server:completeService')
+							ExecuteCommand('loadskin')
                             actionsRemaining = actionsRemaining - 1
-
                             TriggerEvent('ox_lib:notify', {
                                 title = 'Community Service',
                                 description = 'Task completed! ' .. actionsRemaining .. ' remaining',
@@ -420,25 +418,24 @@ CreateThread(function()
                                 duration = 2000
                             })
                         end
-
                         disable_actions = false
-                        break -- exit loop after successful action
+                        break
                     end
                 end
             end
-
             if not nearAction then
                 sleep = 500
             end
         end
-
         Wait(sleep)
     end
 end)
 
--- Cleanup on resource stop
 AddEventHandler('onResourceStop', function(resourceName)
     if GetCurrentResourceName() == resourceName then
         ClearAllParticles()
+        if isSentenced then
+            ExecuteCommand('loadskin')
+        end
     end
 end)
