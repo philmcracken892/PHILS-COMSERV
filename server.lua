@@ -1,15 +1,11 @@
-
 local RSGCore = exports['rsg-core']:GetCoreObject()
-
-
 
 local CommunityServiceData = {}
 
--- Command to open player menu (LEOs only)
+
 RSGCore.Commands.Add('comserv', 'Send To Community Service', {}, false, function(source, args)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player or not Player.PlayerData then
-        
         return
     end
 
@@ -24,11 +20,10 @@ RSGCore.Commands.Add('comserv', 'Send To Community Service', {}, false, function
     end
 end)
 
--- Command to end someone's sentence
+
 RSGCore.Commands.Add('endcomserv', 'End Community Service', {}, false, function(source, args)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player or not Player.PlayerData then
-        
         return
     end
 
@@ -43,7 +38,7 @@ RSGCore.Commands.Add('endcomserv', 'End Community Service', {}, false, function(
     end
 end)
 
--- === Server Events === --
+
 
 RegisterServerEvent('rsg-communityservice:server:getOnlinePlayers', function()
     local src = source
@@ -63,7 +58,27 @@ RegisterServerEvent('rsg-communityservice:server:getOnlinePlayers', function()
     TriggerClientEvent('rsg-communityservice:client:receiveOnlinePlayers', src, players)
 end)
 
-
+RegisterServerEvent('rsg-communityservice:server:getPlayersInService', function()
+    local src = source
+    local players = {}
+    
+    for citizenid, data in pairs(CommunityServiceData) do
+        -- Find the player with this citizenid
+        for _, playerId in pairs(RSGCore.Functions.GetPlayers()) do
+            local Player = RSGCore.Functions.GetPlayer(playerId)
+            if Player and Player.PlayerData and Player.PlayerData.citizenid == citizenid then
+                table.insert(players, {
+                    id = playerId,
+                    name = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
+                    actionsRemaining = data.actions_remaining
+                })
+                break
+            end
+        end
+    end
+    
+    TriggerClientEvent('rsg-communityservice:client:receivePlayersInService', src, players)
+end)
 
 RegisterServerEvent('rsg-communityservice:server:finishCommunityService', function(targetId)
     local playerId = targetId or source
@@ -74,13 +89,11 @@ RegisterServerEvent('rsg-communityservice:server:checkIfSentenced', function()
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player or not Player.PlayerData then
-        
         return
     end
 
     local citizenid = Player.PlayerData.citizenid
     if not citizenid then
-        
         return
     end
 
@@ -94,7 +107,6 @@ RegisterServerEvent('rsg-communityservice:server:completeService', function()
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player or not Player.PlayerData then
-        
         return
     end
 
@@ -111,7 +123,6 @@ RegisterServerEvent('rsg-communityservice:server:extendService', function()
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player or not Player.PlayerData then
-       
         return
     end
 
@@ -124,26 +135,28 @@ end)
 RegisterServerEvent('rsg-communityservice:server:sendToCommunityService', function(target, actions_count)
     local Player = RSGCore.Functions.GetPlayer(target)
     if not Player or not Player.PlayerData then
-       
         return
     end
 
     local citizenid = Player.PlayerData.citizenid
     if not citizenid then
-        
         return
     end
 
     CommunityServiceData[citizenid] = { actions_remaining = actions_count }
+    
+    
+    TriggerClientEvent('comserv:client:prisonclothes', target)
+    
+   
     TriggerClientEvent('rsg-communityservice:client:inCommunityService', target, actions_count)
 end)
 
--- === Release Logic === --
+
 
 function ReleaseFromService(target)
     local Player = RSGCore.Functions.GetPlayer(target)
     if not Player or not Player.PlayerData then
-        
         return
     end
 
@@ -151,10 +164,16 @@ function ReleaseFromService(target)
     if citizenid then
         CommunityServiceData[citizenid] = nil
     end
+    
     TriggerClientEvent('ox_lib:notify', target, {
         title = 'Community Service',
         description = 'Service completed now behave',
         type = 'success'
     })
+    
+    
+    ExecuteCommand('loadskin')
+    
+   
     TriggerClientEvent('rsg-communityservice:client:finishCommunityService', target)
 end
